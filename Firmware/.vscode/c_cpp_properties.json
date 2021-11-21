@@ -8,30 +8,32 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "/Users/joey/Projects/robochobo/Balancing-Robot/include",
-                "/Users/joey/Projects/robochobo/Balancing-Robot/src",
+                "/Users/joey/Projects/robochobo/Firmware/include",
+                "/Users/joey/Projects/robochobo/Firmware/src",
+                "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/Users/joey/Projects/robochobo/Firmware/lib/SparkFunLSM9DSM1",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
-                "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "/Users/joey/.platformio/packages/tool-unity",
                 ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "/Users/joey/Projects/robochobo/Balancing-Robot/include",
-                    "/Users/joey/Projects/robochobo/Balancing-Robot/src",
+                    "/Users/joey/Projects/robochobo/Firmware/include",
+                    "/Users/joey/Projects/robochobo/Firmware/src",
+                    "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/Users/joey/Projects/robochobo/Firmware/lib/SparkFunLSM9DSM1",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                    "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
-                    "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                     "/Users/joey/.platformio/packages/tool-unity",
                     ""
                 ]

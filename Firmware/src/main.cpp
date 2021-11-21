@@ -1,4 +1,11 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <SPI.h>
+
+#define MOTOR_DATA 0x00
+#define IMU_DATE   0x01
+#define ACK        0x02
+
 
 const int xstepPin = 2; //X.STEP
 const int xdirPin = 5; // X.DIR
@@ -18,21 +25,14 @@ void setup() {
     pinMode(ystepPin,OUTPUT); 
     pinMode(ydirPin,OUTPUT);
     Serial.begin(9600);
-    Serial.println("----stepper test ----");
-
-
+    byte a = Serial.read();
+    while(a != ACK) { 
+        a = Serial.read();
+    }
+    Serial.write(ACK);
 }
 
 void loop() {
-    //digitalWrite(dirPin,HIGH); // Enables the motor to move in a particular direction
-    // Makes 200 pulses for making one full cycle rotation
-
-    // for(int i = 100; i < 200; i++) {
-    //   for(int j = 25; j > 0; j--) {
-    //     drive_motor(0, 10, i % 2, i);
-    //     drive_motor(1, 10, i % 2, i);
-    //   }
-    // }
     if(Serial.available() > 0) {
         String data = Serial.readString();
         int step = data.toInt();
@@ -43,28 +43,7 @@ void loop() {
         Serial.println(data);
     }
 
-    /*
-
-    for(int i = 800; i > 100; i--) {
-        if(i%10 == 0) {
-        
-        drive_motor(1, 1, direction, i);
-        drive_motor(0, 1, direction, i);
-        }
-    }
-    direction = !direction;
     
-    for(int i = 100; i < 800; i++) {
-
-        drive_motor(1, 1, direction, i);
-        drive_motor(0, 1, direction, i);
-    }
-
-
-    //delay(500); // One second delay
-
-
-*/
 }
 
 /*
@@ -80,7 +59,7 @@ void drive_motor(int motor, int step, int dir, int pulseDelay) {
     spin = xstepPin;
     dpin = xdirPin;
     }
-    digitalWrite(dpin, dir);54
+    digitalWrite(dpin, dir);
     for(int i = 0; i < step; i++) {
         digitalWrite(spin, HIGH);
         delayMicroseconds(pulseDelay);
