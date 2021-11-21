@@ -13,22 +13,25 @@ Packet Structure: [start_bit,
 SERIAL_PORT = "/dev/cu.usbmodem2142201"
 BAUD_RATE = 9600
 
-MOTOR_DATA = b'\x00'
-IMU_DATA   = b'\x01'
-ACK        = b'\x02'
+SENDMOTOR_DATA   = b'\x00'
+REQUEST_IMU_DATA = b'\x01'
+ACK              = b'\x02'
 
 
 if __name__ == "__main__":
     com = serial.Serial(SERIAL_PORT, BAUD_RATE)
-    time.sleep(3) 
-    a = ""
     print("Connecting to device...")
+    time.sleep(2) 
     com.write(ACK)
-    while(a != ACK):
-        a = com.read()
+    while(com.read() != ACK):
         print(a)
     print("Connection Successful")
 
     while(True):
-        s = com.read()
-        print(s)
+        
+        com.write(b'50')
+        #while(com.read() != ACK):
+        #    print("waiting")
+        #time.sleep(.1)
+
+        

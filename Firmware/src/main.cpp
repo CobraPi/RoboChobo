@@ -12,7 +12,7 @@ const int xdirPin = 5; // X.DIR
 
 const int ystepPin = 4; // Y.STEP
 const int ydirPin = 7; // Y.DIR
-
+int dir = 0;
 //char data[4]; 
 
 void drive_motor(int motor, int step, int dir, int pulseDelay);
@@ -34,16 +34,14 @@ void setup() {
 
 void loop() {
     if(Serial.available() > 0) {
-        String data = Serial.readString();
-        int step = data.toInt();
+        dir = !dir; 
+        char step = Serial.read();
         for(int i = step; i > 0; i--) {
-            drive_motor(0, 1, 0, i + 100);
-            drive_motor(1, 1, 1, i + 100);
+            drive_motor(0, 1, !dir, 400 + 100);
+            drive_motor(1, 1, dir, 400 + 100);
         }
-        Serial.println(data);
+        Serial.write(ACK);
     }
-
-    
 }
 
 /*
