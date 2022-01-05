@@ -12,7 +12,7 @@ Packet Structure: [start_bit,  // BEGIN
 """
 
     
-SERIAL_PORT = "/dev/cu.usbmodem1301"
+SERIAL_PORT = "/dev/cu.usbmodem21301"
 BAUD_RATE = 9600
 
 ############## Protocol Codes ############
@@ -35,7 +35,7 @@ def startConnection(com):
     time.sleep(2) 
     com.write(ACK) # send handshake byte to arduino
     while(com.read() != ACK): # wait for arduino to acknowledge
-        print(".", end="")
+        print(".", end='')
     print("Serial Handshake Successful")
 
 def sendPacket(ser, control_code, data_length, data):
@@ -52,14 +52,21 @@ if __name__ == "__main__":
     com = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, bytesize=EIGHTBITS)
     startConnection(com) 
     #com.write(DEBUG)
-    sendPacket(com, REQUEST_RANGE_DATA, 4, [1,2,3,4])
+    #sendPacket(com, REQUEST_RANGE_DATA, 4, [1,2,3,4])
     #while(True):
         #com.write(START)
         #sendPacket(com, REQUEST_RANGE_DATA, 4, [1,2,3,4])
         #com.write(SENDMOTOR_DATA)
         #if(com.read() == START):
     time.sleep(1)
-    for i in range(com.in_waiting):
-        print(com.read())        
-         #   for i in range(com.in_waiting):
-          #      print(com.read())
+    counter = 0
+    while True:
+        counter += 1
+        print(counter)
+        sendPacket(com, REQUEST_RANGE_DATA, 4, [1,2,3,4])
+        time.sleep(0.02)
+        if(com.in_waiting > 0):
+            for i in range(com.in_waiting):
+                print(com.read())        
+                #   for i in range(com.in_waiting):
+                #      print(com.read())

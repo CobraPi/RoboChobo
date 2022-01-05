@@ -6,91 +6,63 @@ Packet Structure: {start_bit,
                    data
                    end_bit}
 
+Protocol:
+
+Host   ---> Driver 
+Driver ---> Host 
 
 */
-
-
 #include <Arduino.h>
 #include <Wire.h>
 #include <SPI.h>
+#include <SparkFunLSM9DS1.h>
+#include <defines.h>
 
 #define BAUD_RATE 9600
 
 #define ACK   0x06
 #define END   0x00 
-#define BEGIN 0x01
+#define START 0x01
 #define DEBUG 0x08   
 
 #define MOTOR_DATA 0x32
 #define IMU_DATA   0x33
+#define RANGE_DATA 0x34
 
-const int xstepPin = 2; //X.STEP
-const int xdirPin = 5; // X.DIR
+#define STATE_IR_SENSOR_TIMEOUT 0x40
 
-const int ystepPin = 4; // Y.STEP
-const int ydirPin = 7; // Y.DIR
-int dir = 0;
-//char data[4]; 
+#define IR_SENSOR_TIMEOUT 500
 
-void debug();
-void drive_motor(int motor, int step, int dir, int pulseDelay);
+#define DEBUG 
+
 bool direction = 1;
+bool moving = 1;
+bool targetChange = 0;
+
+
 
 void setup() {
     // Sets the two pins as Outputs
-    pinMode(xstepPin,OUTPUT); 
-    pinMode(xdirPin,OUTPUT);
-    pinMode(ystepPin,OUTPUT); 
-    pinMode(ydirPin,OUTPUT);
+    pinMode(X_STEP_PIN, OUTPUT);
+    pinMode(X_DIR_PIN, OUTPUT);
+    pinMode(Y_STEP_PIN, OUTPUT); 
+    pinMode(Y_DIR_PIN, OUTPUT);
+
+    #ifndef SERIAL 
+        Serial.begin(BAUD_RATE);
     
-    Serial.begin(BAUD_RATE);
-    
-    byte ack = Serial.read(); // initialize the handshake variable
-    while(ack != ACK) {       // listen for the handchake character  
-        ack = Serial.read();
-    }
-    Serial.write(ACK); // acknowledge successful connection
+        byte ack = Serial.read(); // initialize the handshake variable
+        while(ack != ACK) {       // listen for the handchake character  
+            ack = Serial.read();
+        }
+        Serial.write(ACK); // acknowledge successful connection
+    #endif
+
 }
 
 void loop() {
-    // check if there is any data in the serial buffer
-    if(Serial.available() > 0 && Serial.read() == BEGIN) {
-        // packet structure [BEGIN, control_code, data_length, [data],END]
-        debug();
+    // 1. Computer 
+
    }
-}
 
-void debug() {
-    char data[3];
-    Serial.readBytesUntil(END, data, 3);
-    for(int i = 0; i < 3; i++) {
-        Serial.print(data[i]);
-        //Serial.write(data[i]);
-    }
-    Serial.write(END);
-}
-
-
-/*
-drives the steppers a according to parameters provided
-*/
-void drive_motor(int motor, int step, int dir, int pulseDelay) {
-    int spin,dpin;
-    if(motor) {
-        spin = ystepPin;
-        dpin = ydirPin;
-    }
-    else {
-        spin = xstepPin;
-        dpin = xdirPin;
-    }
-    digitalWrite(dpin, dir); // Set direction of stepper
-    
-    // pulse the motor for the desired number of steps 
-    for(int i = 0; i < step; i++) {
-        digitalWrite(spin, HIGH);
-        delayMicroseconds(pulseDelay);
-        digitalWrite(spin,LOW);
-        delayMicroseconds(pulseDelay);
-    }
 }

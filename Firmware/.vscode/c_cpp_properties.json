@@ -10,6 +10,7 @@
             "includePath": [
                 "/Users/joey/Projects/robochobo/Firmware/include",
                 "/Users/joey/Projects/robochobo/Firmware/src",
+                "/Users/joey/Projects/robochobo/Firmware/lib/VL6180X",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "/Users/joey/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -26,6 +27,7 @@
                 "path": [
                     "/Users/joey/Projects/robochobo/Firmware/include",
                     "/Users/joey/Projects/robochobo/Firmware/src",
+                    "/Users/joey/Projects/robochobo/Firmware/lib/VL6180X",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "/Users/joey/.platformio/packages/framework-arduino-avr/cores/arduino",
