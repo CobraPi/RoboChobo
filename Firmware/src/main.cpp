@@ -13,15 +13,17 @@ Driver ---> Host
 
 */
 #include <Arduino.h>
-#include <Wire.h>
 #include <SPI.h>
-#include <SparkFunLSM9DS1.h>
+#include <Wire.h>
+#include <IMU.h>
 #include <defines.h>
+#include "openimu.h"
 
 void set_pulse_duration(float pulseTime);
 float pulse_time(float speed);
 void start_timer();
 void stop_timer();
+void print_acc_values();
 
 bool direction = 1;
 bool moving = 1;
@@ -41,6 +43,8 @@ int timer = 0;
 
 float speed = 3;
 
+IMU imu;
+
 void setup() {
     TCCR1A = 0;
     TCCR1B = 0;
@@ -48,36 +52,43 @@ void setup() {
     TIMSK1 |= (1 << OCIE1A);                                   // Enable interrupt for OCR1A match
     TCCR1B |= (1 << WGM12);                                    // CTC mode - reset timer on match
     DDRD |= (1 << R_STEP_PIN) | (1 << L_STEP_PIN) | (1 << L_DIR_PIN) | (1 << R_DIR_PIN); // Set pins to output
-
-
+    
     Serial.begin(BAUD_RATE);
-
-    timer = millis();
+    delay(10);
+    //Serial.println("Waiting for IMU");
+    imu.init_SPI(); 
+    //Serial.println("Done");
+    //timer = millis();
 }
 
 void loop() {
+    //print_acc_values();
+
     if(millis() - timer > 10) 
     {
         if(speed <= 500 && direction) 
         {
             speed++;
-            if(speed >= 500) {
+            if(speed >= 500) 
+            {
                 direction = !direction;
             }
         }
         if(speed >= 0 && !direction) 
         {
             speed--;
-            if(speed <= 0) {
+            if(speed <= 0) 
+            {
                 direction = !direction;
             }
         }
-        if((int)speed % 2 == 0) {
-            skipRightPulse = 1;
+        if((int)speed % 2 == 0) 
+        {
+            skipRightPulse = 0;
             skipLeftPulse = 0;
         }
         else if((int)speed % 100 == 0) {
-            skipLeftPulse = 1;
+            skipLeftPulse = 0;
             skipRightPulse = 0;
         } 
         else {
@@ -177,4 +188,27 @@ ISR(TIMER1_COMPA_vect)
         actualPosition += (RMD_HIGH) ? -1 : 1;
     }
 
+}
+void print_acc_values() {
+    imu.read();
+    imu.cal_absoluteOrientation();
+
+    int16_t pitch;
+    int16_t roll;
+    int16_t heading;
+    float accG[3];
+
+    imu.get_pitchDegrees(pitch);
+    imu.get_rollDegrees(roll);
+    imu.get_heading(heading);
+    imu.get_accG(accG);
+
+    Serial.print("Acceleration in G's: ");
+    Serial.print("X[ "); Serial.print(accG[X]); Serial.print(" ] ");
+    Serial.print("Y[ "); Serial.print(accG[Y]); Serial.print(" ] ");
+    Serial.print("Z[ "); Serial.print(accG[Z]); Serial.print(" ] ");
+    Serial.print("    ");
+    Serial.print("Pitch: "); Serial.print(pitch); Serial.print("  ");
+    Serial.print("Roll: "); Serial.print(roll); Serial.print("  ");
+    Serial.print("Heading: "); Serial.println(heading);
 }
