@@ -1,6 +1,6 @@
 #define DEBUG 1
 
-#define BAUD_RATE 9600
+#define BAUD_RATE 115200
 
 #define L_STEP_PIN 2
 #define L_DIR_PIN  5

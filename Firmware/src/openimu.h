@@ -126,8 +126,7 @@ float feedbackLimit = 0.25;
 
 uint32_t displayTimer;
 
-/*
-void setup() {
+void start() {
 	Serial.begin(115200);
 	Serial.println("Keeping the device still and level during startup will yield the best results");
 	Wire.begin();
@@ -145,7 +144,7 @@ void setup() {
 	displayTimer = millis();
 
 }
-void loop() {
+void looper() {
 
 	currentTime = micros();
 	if (currentTime - previousTime >= tau) {
@@ -167,7 +166,6 @@ void loop() {
 	}
 
 }
-*/
 
 void SetGyroAccMag() {
 	int32_t gyroSumX = 0, gyroSumY = 0, gyroSumZ = 0;

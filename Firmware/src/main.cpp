@@ -15,15 +15,14 @@ Driver ---> Host
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <IMU.h>
 #include <defines.h>
-#include "openimu.h"
+//#include "openimu.h"
+#include <IMU.h>
 
 void set_pulse_duration(float pulseTime);
 float pulse_time(float speed);
 void start_timer();
 void stop_timer();
-void print_acc_values();
 
 bool direction = 1;
 bool moving = 1;
@@ -52,17 +51,37 @@ void setup() {
     TIMSK1 |= (1 << OCIE1A);                                   // Enable interrupt for OCR1A match
     TCCR1B |= (1 << WGM12);                                    // CTC mode - reset timer on match
     DDRD |= (1 << R_STEP_PIN) | (1 << L_STEP_PIN) | (1 << L_DIR_PIN) | (1 << R_DIR_PIN); // Set pins to output
+    //start();
     
     Serial.begin(BAUD_RATE);
-    delay(10);
-    //Serial.println("Waiting for IMU");
-    imu.init_SPI(); 
-    //Serial.println("Done");
-    //timer = millis();
+    Wire.begin();
+    Wire.setClock(400000);
+    imu.init();
+    //InitSensors();
+    //OutputForCalibration();
+    //GetOffsetsAndInitialQuat();
+    //previousTime = micros();
 }
 
 void loop() {
-    //print_acc_values();
+
+    while(true) {
+        imu.poll();
+        float ax,ay,az, gx, gy, gz, mx, my, mz;
+        imu.get_acc(ax, ay, az);
+        imu.get_gyo(gx, gy, gz);
+        imu.get_mag(mx, my, mz);
+        imu.madgwick_filter();
+        imu.cal_attitude();
+        imu.cal_heading();   
+        imu.get_acc(ax, ay, az);   
+        Serial.print("---- Filtered Yaw: ");
+        Serial.print(imu.get_yaw_deg());
+        Serial.print(" Filtered Pitch: ");
+        Serial.print(imu.get_pitch_deg());
+        Serial.print(" Filtered Roll: ");
+        Serial.println(imu.get_roll_deg()); 
+    }
 
     if(millis() - timer > 10) 
     {
@@ -188,27 +207,4 @@ ISR(TIMER1_COMPA_vect)
         actualPosition += (RMD_HIGH) ? -1 : 1;
     }
 
-}
-void print_acc_values() {
-    imu.read();
-    imu.cal_absoluteOrientation();
-
-    int16_t pitch;
-    int16_t roll;
-    int16_t heading;
-    float accG[3];
-
-    imu.get_pitchDegrees(pitch);
-    imu.get_rollDegrees(roll);
-    imu.get_heading(heading);
-    imu.get_accG(accG);
-
-    Serial.print("Acceleration in G's: ");
-    Serial.print("X[ "); Serial.print(accG[X]); Serial.print(" ] ");
-    Serial.print("Y[ "); Serial.print(accG[Y]); Serial.print(" ] ");
-    Serial.print("Z[ "); Serial.print(accG[Z]); Serial.print(" ] ");
-    Serial.print("    ");
-    Serial.print("Pitch: "); Serial.print(pitch); Serial.print("  ");
-    Serial.print("Roll: "); Serial.print(roll); Serial.print("  ");
-    Serial.print("Heading: "); Serial.println(heading);
 }
