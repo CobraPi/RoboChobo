@@ -13,7 +13,7 @@
 #define GYRO_SCALE_FACTOR 0.0175
 #define ACC_SCALE_FACTOR 0.019140625
 
-#define DECLINATION 14.1//12.7 // Declination (degrees) in Philadelphia, PA
+#define DECLINATION 14.1 //Declination (degrees) in Newton, MA
 
 enum AXIS {X, Y, Z};
 
@@ -46,7 +46,6 @@ private:
 
     // Orientation
     float _heading;
-
 
 public:
     

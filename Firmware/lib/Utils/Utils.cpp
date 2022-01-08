@@ -1,7 +1,7 @@
 #include "Utils.h"
 
-int alphaFilter(int currentValue, int previousValue, double alpha) {
-    return ((1 - alpha) * previousValue) + (alpha * currentValue);
+float alphaFilter(float currentValue, float previousValue, float alpha) {
+    return ((1.0 - alpha) * previousValue) + (alpha * currentValue);
 }
 
 int inputExponential(int expo, long int value, int inputMin, int inputMax) {

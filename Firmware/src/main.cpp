@@ -16,8 +16,9 @@ Driver ---> Host
 #include <SPI.h>
 #include <Wire.h>
 #include <defines.h>
-//#include "openimu.h"
 #include <IMU.h>
+#include <AccelStepper.h>
+#include <MultiStepper.h>
 
 void set_pulse_duration(float pulseTime);
 float pulse_time(float speed);
@@ -38,21 +39,29 @@ float targetAngle = 0.0f;
 int32_t actualPosition = 0;
 int32_t targetPosition = 0;
 
+float lastYaw, lastRoll, lastPitch;
+
 int timer = 0;
 
-float speed = 3;
+float speed = 1000;
+float tilt;
 
-IMU imu;
+IMU imu = IMU();
+
+AccelStepper rStepper(AccelStepper::DRIVER, 4, 7);
+
+
+
 
 void setup() {
     TCCR1A = 0;
     TCCR1B = 0;
-    OCR1A = 0x00FF;                                            // When timer is equal to this value, interrupt is triggered
+    OCR1A = 0x000A;                                            // When timer is equal to this value, interrupt is triggered
     TIMSK1 |= (1 << OCIE1A);                                   // Enable interrupt for OCR1A match
     TCCR1B |= (1 << WGM12);                                    // CTC mode - reset timer on match
     DDRD |= (1 << R_STEP_PIN) | (1 << L_STEP_PIN) | (1 << L_DIR_PIN) | (1 << R_DIR_PIN); // Set pins to output
     //start();
-    
+    start_timer(); 
     Serial.begin(BAUD_RATE);
     Wire.begin();
     Wire.setClock(400000);
@@ -61,75 +70,43 @@ void setup() {
     //OutputForCalibration();
     //GetOffsetsAndInitialQuat();
     //previousTime = micros();
+    //set_pulse_duration(pulse_time(34));
+    rStepper.setMaxSpeed(10000);
+    //rStepper.setSpeed(1500);
+
 }
 
 void loop() {
-
-    while(true) {
-        imu.poll();
-        float ax,ay,az, gx, gy, gz, mx, my, mz;
-        imu.get_acc(ax, ay, az);
-        imu.get_gyo(gx, gy, gz);
-        imu.get_mag(mx, my, mz);
-        imu.madgwick_filter();
-        imu.cal_attitude();
-        imu.cal_heading();   
-        imu.get_acc(ax, ay, az);   
-        Serial.print("---- Filtered Yaw: ");
-        Serial.print(imu.get_yaw_deg());
-        Serial.print(" Filtered Pitch: ");
-        Serial.print(imu.get_pitch_deg());
-        Serial.print(" Filtered Roll: ");
-        Serial.println(imu.get_roll_deg()); 
-    }
-
-    if(millis() - timer > 10) 
-    {
-        if(speed <= 500 && direction) 
-        {
-            speed++;
-            if(speed >= 500) 
-            {
-                direction = !direction;
-            }
-        }
-        if(speed >= 0 && !direction) 
-        {
-            speed--;
-            if(speed <= 0) 
-            {
-                direction = !direction;
-            }
-        }
-        if((int)speed % 2 == 0) 
-        {
-            skipRightPulse = 0;
-            skipLeftPulse = 0;
-        }
-        else if((int)speed % 100 == 0) {
-            skipLeftPulse = 0;
-            skipRightPulse = 0;
-        } 
-        else {
-            skipRightPulse = 0;
-            skipLeftPulse = 0;
-        }
-        set_pulse_duration(pulse_time(speed));
-        Serial.println(speed);
-        timer = millis();
-    }
-
-    if (direction)
-        {
-            PORTD &= ~(1 << L_DIR_PIN); // Normal direction
-            PORTD |= (1 << R_DIR_PIN);
-        }
-        else
-        {
-            PORTD |= (1 << L_DIR_PIN); // Reversed direction
-            PORTD &= ~(1 << R_DIR_PIN);
-        }
-
+    imu.poll();
+    float ax,ay,az, gx, gy, gz, mx, my, mz;
+    imu.get_acc(ax, ay, az);
+    imu.get_gyo(gx, gy, gz);
+    imu.get_mag(mx, my, mz);
+    //imu.madgwick_filter();
+    //imu.mahony_filter();
+    imu.cal_attitude();
+    imu.cal_heading();   
+    float pitch = imu.get_pitch_deg();
+    float roll = imu.get_roll_deg();
+    float yaw = imu.get_yaw_deg();
+    float alpha = 1;
+    //speed = roll;
+    imu.get_acc(ax, ay, az);   
+    Serial.print("---- Filtered Yaw: ");
+    Serial.print(alphaFilter(yaw, lastYaw, alpha));
+    Serial.print(" Filtered Pitch: ");
+    Serial.print(alphaFilter(pitch, lastPitch, alpha));
+    Serial.print(" Filtered Roll: ");
+    Serial.println(alphaFilter(roll, lastRoll, alpha));
+    float angle = imu.get_pitch_deg();
+    lastYaw = yaw;
+    lastPitch = pitch;
+    lastRoll = roll; 
+    tilt = map(angle, -90, 90, -5000, 5000);
+    Serial.println(tilt);
+    //rStepper.move(1000);
+    //rStepper.setSpeed(m);
+    //rStepper.runSpeed();
 
 }
 
@@ -179,32 +156,6 @@ inline void start_timer()
 
 ISR(TIMER1_COMPA_vect) 
 {
-    // Drive right motor 
-    if(skipRightPulse == 0) 
-    {
-        if(RMP_HIGH) {
-            // Set pin low
-            PORTD &= ~(1 << R_STEP_PIN);
-        }
-        else {
-            // Set pin high
-            PORTD |= (1 << R_STEP_PIN);
-        }
-    }
-    // Drive left motor
-    if(skipLeftPulse == 0) {
-        if(LMP_HIGH) {
-            // Set pin low
-            PORTD &= ~(1 << L_STEP_PIN);
-        }
-        else {
-            // Set pin high
-            PORTD |= (1 << L_STEP_PIN);
-        }
-    }
-    numInterrupts++;
-    if(numInterrupts % 2 == 0) {
-        actualPosition += (RMD_HIGH) ? -1 : 1;
-    }
-
+    rStepper.setSpeed(tilt);
+    rStepper.runSpeed();
 }

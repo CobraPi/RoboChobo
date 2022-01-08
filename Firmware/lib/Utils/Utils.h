@@ -4,7 +4,7 @@
 #include "math.h"
 #include <Arduino.h>
 
-int alphaFilter(int currentValue, int previousValue, double alpha);
+float alphaFilter(float currentValue, float previousValue, float alpha);
 
 int inputExponential(int expo, long int value, int inputMin, int inputMax);
 

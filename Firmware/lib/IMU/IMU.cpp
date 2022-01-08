@@ -1,9 +1,4 @@
-//
-// Created by joey on 8/23/16.
-//
-
 #include "IMU.h"
-
 
 
 #define sampleFreq	512.0f			// sample frequency in Hz
@@ -57,7 +52,6 @@ IMU::IMU() {
     _rollDegrees = 0;
 
     _heading = 0;
-
 };
 
 void IMU::init() {
@@ -124,8 +118,6 @@ void IMU::cal_attitude() {
 
     _rollDegrees = _rollRadians * 180.0 / M_PI;
     _pitchDegrees = _pitchRadians * 180.0 / M_PI;
-
-    _rollDegrees *= -1;
 }
 
 void IMU::cal_heading() {
@@ -162,9 +154,6 @@ float IMU::get_roll_rad() {
     return _rollRadians;
 }
 
-float IMU::get_yaw_deg() {
-    return _heading;
-}
 
 float IMU::get_pitch_deg() {
     return _pitchDegrees;
@@ -172,6 +161,10 @@ float IMU::get_pitch_deg() {
 
 float IMU::get_roll_deg() {
     return _rollDegrees;
+}
+
+float IMU::get_yaw_deg() {
+    return _heading;
 }
 
 
