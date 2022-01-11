@@ -1,4 +1,4 @@
-#include "IMU.h"
+#include "MPU.h"
 
 
 #define sampleFreq	512.0f			// sample frequency in Hz
@@ -15,7 +15,7 @@ volatile float integralFBx = 0.0f,  integralFBy = 0.0f, integralFBz = 0.0f;	// i
 float invSqrt(float x);
 //------------
 
-IMU::IMU() {
+MPU::MPU() {
     // Initialize class attributes
     _rawAx = 0;
     _rawAy = 0;
@@ -52,9 +52,10 @@ IMU::IMU() {
     _rollDegrees = 0;
 
     _heading = 0;
+
 };
 
-void IMU::init() {
+void MPU::init() {
     L3GOBJ.init();
     LSM303OBJ.init();
     L3GOBJ.writeReg(L3GOBJ.CTRL_REG1, 0x0F); //100hz
@@ -67,7 +68,7 @@ void IMU::init() {
     LSM303OBJ.writeMagReg(LSM303OBJ.MR_REG_M, 0x00);
 }
 
-void IMU::poll() {
+void MPU::poll() {
     L3GOBJ.read();
     LSM303OBJ.readMag();
     LSM303OBJ.readAcc();
@@ -92,27 +93,131 @@ void IMU::poll() {
     _mx = _rawMx;
     _my = _rawMy;
     _mz = _rawMz; 
+
 }
 
-void IMU::get_acc(float &x, float &y, float &z) {
+void MPU::init_bno() {
+	bno = Adafruit_BNO055(55, 0x28);
+	bno.begin();
+}
+
+void MPU::poll_bno() {
+	bno.getEvent(&_orientationData, Adafruit_BNO055::VECTOR_EULER);
+	bno.getEvent(&_angVelData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+	bno.getEvent(&_linearAccData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+	bno.getEvent(&_magData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+	bno.getEvent(&_accData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+	bno.getEvent(&_gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+	_ax = _accData.acceleration.x;
+    _ay = _accData.acceleration.y;
+    _az = _accData.acceleration.z;
+	
+	_ox = _orientationData.orientation.x;
+    _oy = _orientationData.orientation.y;
+    _oz = _orientationData.orientation.z;
+	_heading = _ox;
+		
+	_mx = _magData.magnetic.x;
+    _my = _magData.magnetic.y;
+    _mz = _magData.magnetic.z;
+	
+	_gx = _angVelData.gyro.x;
+    _gy = _angVelData.gyro.y;
+    _gz = _angVelData.gyro.z;
+
+}
+
+void MPU::print_event(sensors_event_t *event) {
+	double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
+  if (event->type == SENSOR_TYPE_ACCELEROMETER) {
+    Serial.print(" Accl:");
+    x = event->acceleration.x;
+    y = event->acceleration.y;
+    z = event->acceleration.z;
+  }
+  else if (event->type == SENSOR_TYPE_ORIENTATION) {
+    Serial.print(" Orient:");
+    x = event->orientation.x;
+    y = event->orientation.y;
+    z = event->orientation.z;
+  }
+  else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
+    Serial.print(" Mag:");
+    x = event->magnetic.x;
+    y = event->magnetic.y;
+    z = event->magnetic.z;
+  }
+  else if (event->type == SENSOR_TYPE_GYROSCOPE) {
+    Serial.print(" Gyro:");
+    x = event->gyro.x;
+    y = event->gyro.y;
+    z = event->gyro.z;
+  }
+  else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
+    Serial.print(" Rot:");
+    x = event->gyro.x;
+    y = event->gyro.y;
+    z = event->gyro.z;
+  }
+  else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
+    Serial.print(" Linear:");
+    x = event->acceleration.x;
+    y = event->acceleration.y;
+    z = event->acceleration.z;
+  }
+  else if (event->type == SENSOR_TYPE_GRAVITY) {
+    Serial.print(" Gravity:");
+    x = event->acceleration.x;
+    y = event->acceleration.y;
+    z = event->acceleration.z;
+  }
+  else {
+    Serial.print("Unk:");
+  }
+
+  Serial.print("\tx= ");
+  Serial.print(x);
+  Serial.print(" |\ty= ");
+  Serial.print(y);
+  Serial.print(" |\tz= ");
+  Serial.print(z);
+}
+
+void MPU::print_all_sensor_data() {
+	print_event(&_orientationData);
+	print_event(&_angVelData);
+	print_event(&_linearAccData);
+	print_event(&_magData);
+	print_event(&_accData);
+	print_event(&_gravityData);
+	Serial.println("");
+}
+
+void MPU::get_acc(float &x, float &y, float &z) {
     x = _ax;
     y = _ay;
     z = _az;
 }
 
-void IMU::get_gyo(float &x, float &y, float &z) {
+void MPU::get_gyo(float &x, float &y, float &z) {
     x = _gx;
     y = _gy;
     z = _gz;
 }
 
-void IMU::get_mag(float &x, float &y, float &z) {
-    x = _rawMx;
-    y = _rawMy;
-    z = _rawMz;
+void MPU::get_mag(float &x, float &y, float &z) {
+	x = _mx;
+	y = _my;
+	z = _mz;
 }
 
-void IMU::cal_attitude() {
+void MPU::get_orient(float &x, float &y, float &z) {
+	x = _ox;
+	y = _oy;
+	z = _oz;
+}
+
+void MPU::cal_attitude() {
     _rollRadians = atan(_ax / sqrt(pow(_ay, 2.0) + pow(_az, 2.0)));
     _pitchRadians = atan(_ay / sqrt(pow(_ax, 2.0) + pow(_az, 2.0)));
 
@@ -120,7 +225,7 @@ void IMU::cal_attitude() {
     _pitchDegrees = _pitchRadians * 180.0 / M_PI;
 }
 
-void IMU::cal_heading() {
+void MPU::cal_heading() {
     if (_my == 0) {
         _heading = (_mx < 0.0) ? 180.0 : 0;
     }
@@ -146,29 +251,29 @@ void IMU::cal_heading() {
 }
 
 
-float IMU::get_pitch_rad() {
+float MPU::get_pitch_rad() {
     return _pitchRadians;
 }
 
-float IMU::get_roll_rad() {
+float MPU::get_roll_rad() {
     return _rollRadians;
 }
 
 
-float IMU::get_pitch_deg() {
+float MPU::get_pitch_deg() {
     return _pitchDegrees;
 }
 
-float IMU::get_roll_deg() {
+float MPU::get_roll_deg() {
     return _rollDegrees;
 }
 
-float IMU::get_yaw_deg() {
+float MPU::get_yaw_deg() {
     return _heading;
 }
 
 
-void IMU::mahony_filter() {
+void MPU::mahony_filter() {
     float recipNorm;
     float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;  
 	float hx, hy, bx, bz;
@@ -237,7 +342,7 @@ void IMU::mahony_filter() {
 
 }
 
-void IMU::madgwick_filter() {
+void MPU::madgwick_filter() {
     float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;

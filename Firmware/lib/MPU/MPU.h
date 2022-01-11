@@ -2,11 +2,13 @@
 // Created by joey on 8/23/16.
 //
 
-#ifndef IMU_H
-#define IMU_H
+#ifndef MPU_H
+#define MPU_H
 #include <avr/io.h>
 #include <LSM303.h>
 #include <L3G.h>
+#include <Adafruit_BNO055.h>
+#include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include <Utils.h>
 
@@ -17,21 +19,25 @@
 
 enum AXIS {X, Y, Z};
 
-class IMU {
+class MPU {
 
 private:
     L3G L3GOBJ;
     LSM303 LSM303OBJ;
+    Adafruit_BNO055 bno;
+    // Sensor event type
+    sensors_event_t _orientationData, _angVelData, _linearAccData, _magData, _accData, _gravityData;
 
-    // Raw IMU component values
+    // Raw MPU component values
     float _rawAx, _rawAy, _rawAz;
     float _rawGx, _rawGy, _rawGz;
     float _rawMx, _rawMy, _rawMz;
 
-    // Filtered IMU component values
+    // Filtered MPU component values
     float _ax, _ay, _az;
     float _gx, _gy, _gz;
     float _mx, _my, _mz;
+    float _ox, _oy, _oz;
 
     // Gravity in G's
     float _axG, _ayG, _azG;
@@ -50,13 +56,18 @@ private:
 public:
     
 
-    IMU();
+    MPU();
     void init();
+    void init_bno();
+    void poll_bno(); 
     void poll();
 
+    void print_event(sensors_event_t *event);
+    void print_all_sensor_data();
     void get_acc(float &x, float &y, float &z);
     void get_gyo(float &x, float &y, float &z);
     void get_mag(float &x, float &y, float &z);
+    void get_orient(float &x, float &y, float &z);
 
     void mahony_filter();
     void madgwick_filter();
@@ -78,4 +89,4 @@ public:
 };
 
 
-#endif //IMU_H
+#endif //MPU_H

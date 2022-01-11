@@ -16,9 +16,10 @@ Driver ---> Host
 #include <SPI.h>
 #include <Wire.h>
 #include <defines.h>
-#include <IMU.h>
+#include <MPU.h>
 #include <AccelStepper.h>
 #include <MultiStepper.h>
+#include <PID.h>
 
 void set_pulse_duration(float pulseTime);
 float pulse_time(float speed);
@@ -45,8 +46,13 @@ int timer = 0;
 
 float speed = 1000;
 float tilt;
+float angle = 0;
 
-IMU imu = IMU();
+PID anglePID(ANGLE_P, ANGLE_I, ANGLE_D, -MAX_SPEED, MAX_SPEED);
+PID speedPID(SPEED_P, SPEED_I, SPEED_D, -MAX_ANGLE + 10.0f, MAX_ANGLE - 10.0f);
+
+float ax,ay,az, gx, gy, gz, mx, my, mz, ox, oy, oz;
+MPU mpu = MPU();
 
 AccelStepper rStepper(AccelStepper::DRIVER, 4, 7);
 
@@ -65,45 +71,100 @@ void setup() {
     Serial.begin(BAUD_RATE);
     Wire.begin();
     Wire.setClock(400000);
-    imu.init();
+    //imu.init();
+    mpu.init_bno();
     //InitSensors();
     //OutputForCalibration();
     //GetOffsetsAndInitialQuat();
     //previousTime = micros();
     //set_pulse_duration(pulse_time(34));
-    rStepper.setMaxSpeed(10000);
+    rStepper.setMaxSpeed(MAX_SPEED);
     //rStepper.setSpeed(1500);
 
 }
 
 void loop() {
-    imu.poll();
-    float ax,ay,az, gx, gy, gz, mx, my, mz;
-    imu.get_acc(ax, ay, az);
-    imu.get_gyo(gx, gy, gz);
-    imu.get_mag(mx, my, mz);
+    mpu.poll_bno();
+    //mpu.print_all_sensor_data();
+    
+    mpu.get_acc(ax, ay, az);
+    mpu.get_gyo(gx, gy, gz);
+    mpu.get_mag(mx, my, mz);
+    mpu.get_orient(ox, oy, oz);
+    mpu.cal_attitude();
+    Serial.print("Accel: ");
+    Serial.print("\tx= ");
+    Serial.print(ax);
+    Serial.print(" |\ty= ");
+    Serial.print(ay);
+    Serial.print(" |\tz= ");
+    Serial.print(az);
+
+    Serial.print(" Gyro: ");
+    Serial.print("\tx= ");
+    Serial.print(gx);
+    Serial.print(" |\ty= ");
+    Serial.print(gy);
+    Serial.print(" |\tz= ");
+    Serial.print(gz);
+
+    Serial.print(" Mag: ");
+    Serial.print("\tx= ");
+    Serial.print(mx);
+    Serial.print(" |\ty= ");
+    Serial.print(my);
+    Serial.print(" |\tz= ");
+    Serial.print(mz);
+   
+    Serial.print(" Orient: ");
+    Serial.print("\tx= ");
+    Serial.print(ox);
+    Serial.print(" |\ty= ");
+    Serial.print(oy);
+    Serial.print(" |\tz= ");
+    Serial.print(oz); 
+    
+    Serial.print(" Pitch: ");
+    Serial.print(mpu.get_pitch_deg());
+    Serial.print( " Roll: ");
+    Serial.print(mpu.get_roll_deg());
+
     //imu.madgwick_filter();
-    //imu.mahony_filter();
-    imu.cal_attitude();
-    imu.cal_heading();   
-    float pitch = imu.get_pitch_deg();
-    float roll = imu.get_roll_deg();
-    float yaw = imu.get_yaw_deg();
-    float alpha = 1;
+    ////imu.mahony_filter();
+    //imu.cal_attitude();
+    //imu.cal_heading();   
+    //float pitch = imu.get_pitch_deg();
+    //float roll = imu.get_roll_deg();
+    //float yaw = imu.get_yaw_deg();
+    //float alpha = 1;
     //speed = roll;
-    imu.get_acc(ax, ay, az);   
-    Serial.print("---- Filtered Yaw: ");
-    Serial.print(alphaFilter(yaw, lastYaw, alpha));
-    Serial.print(" Filtered Pitch: ");
-    Serial.print(alphaFilter(pitch, lastPitch, alpha));
-    Serial.print(" Filtered Roll: ");
-    Serial.println(alphaFilter(roll, lastRoll, alpha));
-    float angle = imu.get_pitch_deg();
-    lastYaw = yaw;
-    lastPitch = pitch;
-    lastRoll = roll; 
-    tilt = map(angle, -90, 90, -5000, 5000);
+    //imu.get_acc(ax, ay, az);   
+    //Serial.print("---- Filtered Yaw: ");
+    //Serial.print(alphaFilter(yaw, lastYaw, alpha));
+    //Serial.print(" Filtered Pitch: ");
+    //Serial.print(alphaFilter(pitch, lastPitch, alpha));
+    //Serial.print(" Filtered Roll: ");
+    //Serial.println(alphaFilter(roll, lastRoll, alpha));
+    //float angle = imu.get_pitch_deg();
+    
+    constexpr float complementGyro = 1.0f - (1.0f / REFRESH_RATE);
+    constexpr float complementAcc = 1.0f / REFRESH_RATE;
+    //float accelerationY = atan(-1 * (ax / ACC_RATE) / sqrt(pow((ay / ACC_RATE), 2) + pow((az / ACC_RATE), 2))) * RAD_TO_DEG - CG; // Calculate accelerometer angle from y-axis
+    //float accelerationY = mpu.get_pitch_deg();
+    //angle += (float)(gy) * -1; /// GYRO_RATE / REFRESH_RATE;                                                                                   // Calculate the angular rotation gyro has measured from this loop
+    //angle = mpu.get_pitch_deg();
+    //angle = complementGyro * angle + complementAcc * accelerationY;
+    angle = mpu.get_pitch_deg();
+    angle += gx * -1;
+    float Vspeed = anglePID.compute(angle - targetAngle);
+    Serial.print("    Angle: "); 
+    Serial.print(angle);
+    Serial.print("    Speed: ");
+    Serial.print(Vspeed);
+    tilt = Vspeed;//map(Vspeed, -MAX_ANGLE, MAX_ANGLE, -MAX_SPEED, MAX_SPEED);
+    Serial.print("    Tilt: "); 
     Serial.println(tilt);
+    delay(REFRESH_RATE);
     //rStepper.move(1000);
     //rStepper.setSpeed(m);
     //rStepper.runSpeed();
@@ -156,6 +217,12 @@ inline void start_timer()
 
 ISR(TIMER1_COMPA_vect) 
 {
+    if(tilt > MAX_SPEED) {
+        tilt = MAX_SPEED;
+    }
+    else if(tilt < -MAX_SPEED) {
+        tilt = -MAX_SPEED;
+    }
     rStepper.setSpeed(tilt);
     rStepper.runSpeed();
 }
