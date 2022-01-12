@@ -1,3 +1,5 @@
+#define THRESHOLD 0.001 // Twiddle threshold
+
 class PID {
   float P;
   float I;
@@ -16,6 +18,7 @@ class PID {
   void setD(float);
   void setPID(float, float, float);
   void setLimits(int16_t, int16_t);
+  void twiddle();
 
   float getP();
   float getI();

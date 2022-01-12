@@ -25,6 +25,9 @@ void set_pulse_duration(float pulseTime);
 float pulse_time(float speed);
 void start_timer();
 void stop_timer();
+void twiddle_pid();
+float get_angle();
+void update_pid(int index, float value);
 
 bool direction = 1;
 bool moving = 1;
@@ -48,14 +51,20 @@ float speed = 1000;
 float tilt;
 float angle = 0;
 
+// Twiddle params
+float p[] = {0, 0, 0};
+float dp[] = {1, 1, 1};
+float bestError;
+bool first = true;;
+
 PID anglePID(ANGLE_P, ANGLE_I, ANGLE_D, -MAX_SPEED, MAX_SPEED);
 PID speedPID(SPEED_P, SPEED_I, SPEED_D, -MAX_ANGLE + 10.0f, MAX_ANGLE - 10.0f);
 
 float ax,ay,az, gx, gy, gz, mx, my, mz, ox, oy, oz;
 MPU mpu = MPU();
 
-AccelStepper rStepper(AccelStepper::DRIVER, 4, 7);
-
+AccelStepper rStepper(AccelStepper::DRIVER, R_STEP_PIN, R_DIR_PIN);
+AccelStepper lStepper(AccelStepper::DRIVER, L_STEP_PIN, L_DIR_PIN);
 
 
 
@@ -79,12 +88,25 @@ void setup() {
     //previousTime = micros();
     //set_pulse_duration(pulse_time(34));
     rStepper.setMaxSpeed(MAX_SPEED);
+    lStepper.setMaxSpeed(MAX_SPEED);
     //rStepper.setSpeed(1500);
-
+    
 }
 
 void loop() {
     mpu.poll_bno();
+    if(first) {
+        Serial.println("twiddling");
+        twiddle_pid();
+        Serial.print("P: ");
+        Serial.print(anglePID.getP());
+        Serial.print(" I: ");
+        Serial.print(anglePID.getI());
+        Serial.print(" D: ");
+        Serial.println(anglePID.getD());
+        first = false;
+    }
+
     //mpu.print_all_sensor_data();
     
     mpu.get_acc(ax, ay, az);
@@ -154,8 +176,7 @@ void loop() {
     //angle += (float)(gy) * -1; /// GYRO_RATE / REFRESH_RATE;                                                                                   // Calculate the angular rotation gyro has measured from this loop
     //angle = mpu.get_pitch_deg();
     //angle = complementGyro * angle + complementAcc * accelerationY;
-    angle = mpu.get_pitch_deg();
-    angle += gx * -1;
+    angle = get_angle(); 
     float Vspeed = anglePID.compute(angle - targetAngle);
     Serial.print("    Angle: "); 
     Serial.print(angle);
@@ -169,6 +190,75 @@ void loop() {
     //rStepper.setSpeed(m);
     //rStepper.runSpeed();
 
+}
+
+void update_pid(int index, float value) {
+    anglePID.reset(); 
+    switch(index) {
+        case 0:
+            anglePID.setP(value);
+            break;
+        case 1:
+            anglePID.setI(value);
+            break;
+        case 2:
+            anglePID.setD(value);
+            break;
+    }
+}
+
+void twiddle_pid() {
+    for(int i = 0; i < 3; i++) {
+        p[i] = 0;
+        dp[i] = 1;
+    }
+    angle = get_angle();
+    float error = anglePID.compute(angle - targetAngle);
+    bestError = error;
+    while((dp[0] + dp[1] + dp[2]) > TWID_THRESH) {
+        for(int i = 0; i < 3; i++) {
+            p[i] += dp[i]; 
+            update_pid(i, p[i]);
+            angle = get_angle();
+            error = anglePID.compute(angle-targetAngle);
+            tilt = error;
+            if(error < bestError) {
+                bestError = error;
+                dp[i] *= 1.1;
+            } 
+            else {
+                p[i] -= 2 * dp[i];
+                update_pid(i, p[i]); 
+                angle = get_angle();
+                error = anglePID.compute(angle-targetAngle);
+                tilt = error; 
+                if(error < bestError) {
+                     bestError = error;
+                     dp[i] *= 1.05;
+                }
+                else {
+                    p[i] += dp[i];
+                    update_pid(i, p[i]);
+                    dp[i] *= 0.95;
+                }
+            }
+            //update_pid(i, p[i]);
+
+            Serial.println(p[i]);
+        }
+    }
+    //anglePID.setPID(p[0], p[1], p[2]);    
+}
+float get_angle() {
+    mpu.poll_bno();
+    mpu.get_acc(ax, ay, az);
+    mpu.get_gyo(gx, gy, gz);
+    mpu.get_mag(mx, my, mz);
+    mpu.get_orient(ox, oy, oz);
+    mpu.cal_attitude();
+    float reading = mpu.get_pitch_deg();
+    reading += gx * -1;
+    return reading;
 }
 
 /*
@@ -223,6 +313,8 @@ ISR(TIMER1_COMPA_vect)
     else if(tilt < -MAX_SPEED) {
         tilt = -MAX_SPEED;
     }
-    rStepper.setSpeed(tilt);
+    rStepper.setSpeed(tilt * -1);
+    lStepper.setSpeed(tilt); 
     rStepper.runSpeed();
+    lStepper.runSpeed();
 }

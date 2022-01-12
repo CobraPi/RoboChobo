@@ -24,10 +24,12 @@
 #define ACC_RATE 100.0f
 #define GYRO_RATE 100.8f
 
-#define ANGLE_P 19.0
-#define ANGLE_I 5.0
-#define ANGLE_D 30.0
+#define ANGLE_P 0//19.0
+#define ANGLE_I 0//5.0
+#define ANGLE_D 0//30.0
 
 #define SPEED_P 0.0165f
 #define SPEED_I 0.0f
 #define SPEED_D 0.00425f
+
+#define TWID_THRESH 0.0001

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "PID.h"
 
-  PID::PID(float _P, float _I, float _D, int16_t _min, int16_t _max) {
+    PID::PID(float _P, float _I, float _D, int16_t _min, int16_t _max) {
     PID::setPID(_P, _I, _D);
     PID::setLimits(_min, _max);
     PID::reset();
@@ -48,9 +48,7 @@
     float outD = D * (error - previousError);
 
     float output = outP + outI + outD;
-
     output = constrain(output, minimum, maximum);
-
     previousError = error;
 
     return output;
